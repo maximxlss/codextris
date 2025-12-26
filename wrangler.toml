@@ -1,0 +1,12 @@
+name = "codextris"
+main = ".svelte-kit/cloudflare/_worker.js"
+compatibility_date = "2025-12-01"
+
+[assets]
+binding = "ASSETS"
+directory = ".svelte-kit/cloudflare"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "codextris-db"
+database_id = "d0970655-2ca3-4b18-8eab-1838adb448a3"

@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  --bg-0: #070a12;
+  --ink: rgba(255, 255, 255, 0.92);
+  --ink-soft: rgba(255, 255, 255, 0.55);
+  --accent: #4debff;
+  --danger: #ff6b6b;
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --surface: var(--panel);
+  --surface-2: var(--panel);
+  --radius-xl: 16px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --shadow-soft: 0 18px 40px rgba(4, 8, 16, 0.5);
+  --shadow-strong: 0 34px 90px rgba(3, 8, 18, 0.68);
+  color-scheme: dark;
+  background:
+    radial-gradient(1200px 720px at 50% 10%, rgba(255, 255, 255, 0.06), transparent 60%),
+    var(--bg-0);
+  color: var(--ink);
+  min-height: 100svh;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  position: relative;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.page {
+  min-height: 100svh;
+  height: 100svh;
+  padding: clamp(1rem, 2vw, 2.2rem);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
+}
+
+.layout {
+  width: min(1200px, 100%);
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  gap: clamp(1rem, 2.4vw, 2.4rem);
+  align-items: stretch;
+  animation: rise 0.7s ease 0.05s both;
+  position: relative;
+  z-index: 1;
+}
+
+.stage {
+  position: relative;
+  padding: clamp(1rem, 2.2vw, 2.2rem);
+  border-radius: var(--radius-xl);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.board {
+  max-height: 100%;
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+  border-radius: var(--radius-md);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  background: #020408;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .page {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  :global(body) {
+    overflow-y: auto;
+  }
+}
+
+@media (max-height: 820px) {
+  .page {
+    padding: 0.8rem 2vw;
+  }
+
+  .layout {
+    height: 100%;
+  }
+
+  :global(body) {
+    overflow-y: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout {
+    animation: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
