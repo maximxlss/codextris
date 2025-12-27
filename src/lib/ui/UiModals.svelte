@@ -55,6 +55,33 @@
   };
 </script>
 
+{#if $state.showViewportGuard && !$state.bypassViewportGuard}
+  <div
+    class="overlay modal guard"
+    role="button"
+    tabindex="0"
+    transition:fade={{ duration: 160 }}
+    on:click|self={actions.onBypassViewportGuard}
+    on:keydown={(event) => handleOverlayKeydown(event, actions.onBypassViewportGuard)}
+  >
+    <div
+      class="modal-card settings-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Screen too small"
+      tabindex="-1"
+      transition:scale={{ duration: 160, start: 0.97 }}
+    >
+      <h2>Screen too small</h2>
+      <p>This layout needs more space to stay readable. Try a wider window or landscape orientation.</p>
+      <div class="onboard-actions">
+        <button class="primary" on:click={actions.onBypassViewportGuard}>Continue anyway</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+
 {#if $state.showSettings}
   <div
     class="overlay modal"

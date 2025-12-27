@@ -7,7 +7,7 @@ const base: GuardInput = {
   viewportWidth: 1200,
   viewportHeight: 800,
   cellSize: 24,
-  minViewportWidth: 960,
+  minViewportWidth: 1130,
   minViewportHeight: 640,
   minViewportAspect: 1.1,
   minCellSize: 18

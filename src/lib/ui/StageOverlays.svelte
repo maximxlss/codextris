@@ -17,15 +17,7 @@
   };
 </script>
 
-{#if $state.showViewportGuard && !$state.bypassViewportGuard}
-  <div class="overlay guard">
-    <div class="onboard-card">
-      <h2>Screen too small</h2>
-      <p>This layout needs more space to stay readable. Try a wider window or landscape orientation.</p>
-      <button class="primary" on:click={actions.onBypassViewportGuard}>Continue anyway</button>
-    </div>
-  </div>
-{/if}
+
 
 {#if $state.ui.status === 'menu' && (!$state.showViewportGuard || $state.bypassViewportGuard)}
   <div class="overlay ready">

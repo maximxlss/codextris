@@ -32,9 +32,14 @@ export const createLayoutManager = (deps: LayoutDeps) => {
   };
 
   const updateViewportFlags = () => {
+    const layoutEl = deps.getLayoutEl();
+    const viewportWidth = layoutEl
+      ? Math.max(0, layoutEl.getBoundingClientRect().width)
+      : window.innerWidth;
+
     deps.setShowViewportGuard(
       shouldShowViewportGuard({
-        viewportWidth: window.innerWidth,
+        viewportWidth,
         viewportHeight: window.innerHeight,
         cellSize: deps.getRenderOptions().cellSize,
         minViewportWidth: deps.minViewportWidth,
