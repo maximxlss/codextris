@@ -291,7 +291,7 @@
               {#if $derived.activeLeaderboard.status === 'loading'}
                 <p class="muted leaderboard-refresh">Refreshing…</p>
               {/if}
-              <p class="muted leaderboard-note">Showing top {LEADERBOARD_LIMIT} entries.</p>
+              <p class="muted leaderboard-note">Showing top {LEADERBOARD_LIMIT} entries</p>
               {#each $derived.activeEntries as entry, index (entry.id)}
                 <div>
                   <button
