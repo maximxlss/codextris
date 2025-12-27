@@ -5,6 +5,7 @@
   import BackendAlerts from '$lib/ui/BackendAlerts.svelte';
   import type { GamePageController } from '$lib/ui/game-page';
   import { setGamePageContext } from '$lib/ui/game-page';
+  import { CLIENT_VERSION } from '$lib/ui/page/constants';
 
   export let controller: GamePageController;
 
@@ -19,6 +20,15 @@
   $: elements.setLayout(layoutEl);
   $: elements.setStage(stageEl);
   $: elements.setCanvas(canvasEl);
+
+  const REPOSITORY_URL = 'https://github.com/maximxlss/codextris';
+
+  const commitHash = (() => {
+    const match = CLIENT_VERSION.match(/([a-f0-9]{7,40})$/i);
+    return match ? match[1] : null;
+  })();
+
+  const versionLink = commitHash ? `${REPOSITORY_URL}/tree/${commitHash}` : REPOSITORY_URL;
 </script>
 
 <main class="page">
@@ -31,4 +41,18 @@
   </section>
   <BackendAlerts />
   <UiModals />
+  <div class="floating-meta">
+    <a
+      class="github-icon"
+      href={REPOSITORY_URL}
+      target="_blank"
+      rel="noreferrer noopener"
+      aria-label="Open Codextris on GitHub"
+    >
+      <img src="/github-mark-white.svg" alt="GitHub" />
+    </a>
+    <a class="version-link" href={versionLink} target="_blank" rel="noreferrer noopener">
+      {CLIENT_VERSION}
+    </a>
+  </div>
 </main>
