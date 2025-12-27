@@ -232,6 +232,7 @@ export const updateGame = (state: GameState, input: InputSnapshot, dt: number): 
     events.lockResult = lockResult;
     resetFallTimers(state);
     checkGoalComplete(state);
+    clearRotationState(state);
     return events;
   }
 
