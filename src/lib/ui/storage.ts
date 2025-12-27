@@ -1,4 +1,5 @@
 import type { GameConfig, GameModeId } from '$lib/game/types';
+import { MAX_NICKNAME_LENGTH } from '$lib/leaderboard/constants';
 
 type NormalizeConfig = (draft: GameConfig) => GameConfig;
 
@@ -46,7 +47,10 @@ export const loadStoredMode = (
 
 export const loadStoredNickname = (key: string): string | null => {
   const stored = safeGet(key);
-  return typeof stored === 'string' ? stored : null;
+  if (typeof stored !== 'string') return null;
+  const trimmed = stored.trim();
+  if (!trimmed) return null;
+  return trimmed.length > MAX_NICKNAME_LENGTH ? trimmed.slice(0, MAX_NICKNAME_LENGTH) : trimmed;
 };
 
 export const loadStoredAudioMuted = (key: string): boolean | null => {

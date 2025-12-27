@@ -7,6 +7,7 @@ import {
   jsonError,
   parseJson
 } from '$lib/server/leaderboard';
+import { MAX_NICKNAME_LENGTH } from '$lib/leaderboard/constants';
 
 const SESSION_TABLE = 'session_nonces';
 const TTL_MINUTES = 12;
@@ -23,6 +24,9 @@ export const POST: RequestHandler = async (event) => {
       : '';
   if (!playerName) {
     return jsonError('nickname-required', 400);
+  }
+  if (playerName.length > MAX_NICKNAME_LENGTH) {
+    return jsonError('nickname-too-long', 400);
   }
 
   const now = new Date();

@@ -1,3 +1,8 @@
+# Vibecoded tetris
+Not a single line of code was written by me. Everything was written by gpt-5.2-codex under my guidance.
+
+![screeenshot](images/screenshot.png)
+
 # Codextris — Neon Tetris
 
 Codextris is a neon-styled, keyboard-first Tetris built with SvelteKit + TypeScript. It uses a deterministic fixed-timestep loop, configurable handling presets, and a canvas renderer tuned for crisp, responsive play.

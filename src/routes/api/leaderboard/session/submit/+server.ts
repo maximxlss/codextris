@@ -1,5 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { GAME_MODES } from '$lib/game/modes';
+import { MAX_NICKNAME_LENGTH } from '$lib/leaderboard/constants';
 import { getDb, isNumber, jsonError, parseJson } from '$lib/server/leaderboard';
 
 const SESSION_TABLE = 'session_nonces';
@@ -30,8 +32,20 @@ export const POST: RequestHandler = async (event) => {
     return jsonError('bad-request', 400);
   }
 
+  if (playerName.length > MAX_NICKNAME_LENGTH) {
+    return jsonError('nickname-too-long', 400);
+  }
+
   if (metric !== 'score' && metric !== 'time') {
     return jsonError('bad-request', 400);
+  }
+
+  const mode = GAME_MODES.find((candidate) => candidate.metric && candidate.id === modeId) ?? null;
+  if (!mode) {
+    return jsonError(VALIDATION_ERROR, 400);
+  }
+  if (metric !== mode.metric) {
+    return jsonError(VALIDATION_ERROR, 400);
   }
 
   const metricValueRaw = (body as { metricValue?: unknown })?.metricValue;
@@ -49,11 +63,18 @@ export const POST: RequestHandler = async (event) => {
     return jsonError('bad-request', 400);
   }
 
-  const metricValue = metricValueRaw;
   const score = scoreRaw;
   const timeMs = timeMsRaw;
   const lines = linesRaw;
   const pieces = piecesRaw;
+  if (score < 0 || timeMs < 0 || lines < 0 || pieces < 0) {
+    return jsonError(VALIDATION_ERROR, 400);
+  }
+
+  const expectedMetricValue = metric === 'time' ? timeMs : score;
+  if (metricValueRaw < 0 || metricValueRaw !== expectedMetricValue) {
+    return jsonError(VALIDATION_ERROR, 400);
+  }
 
   const computedPps = timeMs > 0 ? pieces / (timeMs / 1000) : 0;
 
@@ -109,6 +130,15 @@ export const POST: RequestHandler = async (event) => {
     return jsonError(VALIDATION_ERROR, 400);
   }
 
+  const consume = await db.prepare(`DELETE FROM ${SESSION_TABLE} WHERE nonce = ?`).bind(nonce).run();
+  if (!consume.success) {
+    return jsonError('nonce-consume-failed', 500);
+  }
+  const changes = Number(consume.meta?.changes ?? 0);
+  if (changes < 1) {
+    return jsonError(VALIDATION_ERROR, 400);
+  }
+
   const createdAt = new Date().toISOString();
   const insert = await db
     .prepare(
@@ -120,7 +150,7 @@ export const POST: RequestHandler = async (event) => {
       crypto.randomUUID(),
       modeId,
       metric,
-      metricValue,
+      expectedMetricValue,
       score,
       timeMs,
       lines,
@@ -139,8 +169,6 @@ export const POST: RequestHandler = async (event) => {
   if (!insert.success) {
     return jsonError('insert-failed', 500);
   }
-
-  await db.prepare(`DELETE FROM ${SESSION_TABLE} WHERE nonce = ?`).bind(nonce).run();
 
   return json({ ok: true });
 };

@@ -8,6 +8,13 @@
   const format = view.format;
   const labels = view.labels;
   const helpers = view.helpers;
+
+  const getNameSizeClass = (name: string) => {
+    const length = name.trim().length;
+    if (length > 16) return 'name-micro';
+    if (length > 12) return 'name-tight';
+    return '';
+  };
 </script>
 
 <aside class="side">
@@ -149,7 +156,12 @@
           <p class="muted">Offline</p>
         {:else if $derived.globalTopEntry}
           <div class="leaderboard-entry">
-            <strong>#1 {$derived.globalTopEntry.playerName}</strong>
+            <strong
+              class={getNameSizeClass($derived.globalTopEntry.playerName)}
+              title={$derived.globalTopEntry.playerName}
+            >
+              #1 {$derived.globalTopEntry.playerName}
+            </strong>
             <span>{format.formatMetricValue($derived.globalTopEntry.metricValue, $derived.displayMode)}</span>
           </div>
         {:else}
@@ -191,7 +203,9 @@
           <p class="muted">Offline</p>
         {:else if $derived.mineTopEntry}
           <div class="leaderboard-entry">
-            <strong>#1 {$derived.mineTopEntry.playerName}</strong>
+            <strong class={getNameSizeClass($derived.mineTopEntry.playerName)} title={$derived.mineTopEntry.playerName}>
+              #1 {$derived.mineTopEntry.playerName}
+            </strong>
             <span>{format.formatMetricValue($derived.mineTopEntry.metricValue, $derived.displayMode)}</span>
           </div>
         {:else}

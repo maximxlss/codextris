@@ -1,10 +1,18 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { GAME_MODES } from '$lib/game/modes';
+import type { GameModeId } from '$lib/game/types';
 import { getDb, jsonError, parseJson } from '$lib/server/leaderboard';
 import type { LeaderboardBatchRequest } from '$lib/leaderboard/types';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
+const leaderboardModeIds = new Set<GameModeId>(
+  GAME_MODES.filter((mode) => mode.metric).map((mode) => mode.id)
+);
+
+const isLeaderboardModeId = (value: unknown): value is GameModeId =>
+  typeof value === 'string' && leaderboardModeIds.has(value as GameModeId);
 
 const buildQuery = (where: string) => `
   SELECT id, mode, metric_value, score, time_ms, lines, pieces, pps, seed, player_name, created_at, client_version
@@ -29,7 +37,7 @@ export const POST: RequestHandler = async (event) => {
 
   const body = (await parseJson(event.request)) as LeaderboardBatchRequest | null;
   const modes = Array.isArray(body?.modes)
-    ? body?.modes.filter((value) => typeof value === 'string')
+    ? Array.from(new Set(body.modes.filter(isLeaderboardModeId)))
     : [];
   if (modes.length === 0) {
     return json({ entries: [] });

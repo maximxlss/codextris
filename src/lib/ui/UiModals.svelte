@@ -2,7 +2,9 @@
   import { fade, scale } from 'svelte/transition';
   import './UiModals.css';
   import { getGamePageContext } from '$lib/ui/game-page';
+  import { MAX_NICKNAME_LENGTH } from '$lib/leaderboard/constants';
   import type { LeaderboardEntry } from '$lib/game/leaderboard';
+  import { LEADERBOARD_LIMIT } from '$lib/ui/page/constants';
 
   const { view, actions, elements } = getGamePageContext();
   const state = view.state;
@@ -44,6 +46,13 @@
       close();
     }
   };
+
+  const getNameSizeClass = (name: string) => {
+    const length = name.trim().length;
+    if (length > 16) return 'name-micro';
+    if (length > 12) return 'name-tight';
+    return '';
+  };
 </script>
 
 {#if $state.showSettings}
@@ -76,6 +85,7 @@
             type="text"
             placeholder="Set your name"
             value={$state.nicknameDraft}
+            maxlength={MAX_NICKNAME_LENGTH}
             on:input={handleNicknameInput}
             on:keydown={(event) => {
               if (event.key === 'Enter') {
@@ -240,15 +250,21 @@
           <p class="modal-subtitle">Set a nickname to appear in personal leaderboards.</p>
         {:else}
           <div class="leaderboard-list">
-            {#if $derived.activeLeaderboard.status === 'loading'}
-              <p class="muted">Loading...</p>
-            {:else if $derived.activeLeaderboard.status === 'error'}
-              <p class="muted">Error loading</p>
-            {:else if $derived.activeLeaderboard.status === 'offline'}
-              <p class="muted">Offline</p>
-            {:else if $derived.activeEntries.length === 0}
-              <p class="muted">No scores yet</p>
+            {#if $derived.activeEntries.length === 0}
+              {#if $derived.activeLeaderboard.status === 'loading'}
+                <p class="muted">Loading...</p>
+              {:else if $derived.activeLeaderboard.status === 'error'}
+                <p class="muted">Error loading</p>
+              {:else if $derived.activeLeaderboard.status === 'offline'}
+                <p class="muted">Offline</p>
+              {:else}
+                <p class="muted">No scores yet</p>
+              {/if}
             {:else}
+              {#if $derived.activeLeaderboard.status === 'loading'}
+                <p class="muted leaderboard-refresh">Refreshing…</p>
+              {/if}
+              <p class="muted leaderboard-note">Showing top {LEADERBOARD_LIMIT} entries.</p>
               {#each $derived.activeEntries as entry, index (entry.id)}
                 <div>
                   <button
@@ -256,20 +272,24 @@
                     on:click={() => toggleEntrySelection(entry.id)}
                   >
                     <span class="rank">#{index + 1}</span>
-                    <span class="name">{entry.playerName}</span>
+                    <span class={`name ${getNameSizeClass(entry.playerName)}`} title={entry.playerName}>
+                      {entry.playerName}
+                    </span>
                     <span class="value">{format.formatMetricValue(entry.metricValue, $derived.displayMode)}</span>
                     <span class="date">{format.formatLeaderboardDate(entry.createdAt)}</span>
                   </button>
                   {#if selectedEntry && selectedEntry.id === entry.id}
                     <div class="leaderboard-detail">
                       <div class="detail-header">
-                        <span>{selectedEntry.playerName}</span>
-                        <span>{format.formatMetricValue(selectedEntry.metricValue, $derived.displayMode)}</span>
+                        <span class="detail-name">{selectedEntry.playerName}</span>
+                        <span class="detail-value">
+                          {format.formatMetricValue(selectedEntry.metricValue, $derived.displayMode)}
+                        </span>
                       </div>
                       <div class="detail-grid">
                         <div>
                           <span class="detail-label">Score</span>
-                          <strong>{selectedEntry.score}</strong>
+                          <strong>{$derived.displayMode.id === 'sprint40' ? 'N/A' : selectedEntry.score}</strong>
                         </div>
                         <div>
                           <span class="detail-label">Lines</span>
@@ -290,6 +310,10 @@
                         <div>
                           <span class="detail-label">Submitted</span>
                           <strong>{format.formatLeaderboardDateTime(selectedEntry.createdAt)}</strong>
+                        </div>
+                        <div>
+                          <span class="detail-label">Version</span>
+                          <strong>{selectedEntry.clientVersion ?? 'N/A'}</strong>
                         </div>
                       </div>
                     </div>

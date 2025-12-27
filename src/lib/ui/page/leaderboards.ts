@@ -170,13 +170,19 @@ export const createLeaderboardController = (deps: LeaderboardDeps) => {
     const globalCache = getCache('global');
     globalCache.status = 'loading';
     delete globalCache.error;
-    applyCacheToState('global', mode, globalCache, globalPrevious);
+    const keepGlobalVisible = deps.getLeaderboardOpen() && globalPrevious.entries.length > 0;
+    if (!keepGlobalVisible) {
+      applyCacheToState('global', mode, globalCache, globalPrevious);
+    }
 
     if (hasNickname) {
       const mineCache = getCache('mine');
       mineCache.status = 'loading';
       delete mineCache.error;
-      applyCacheToState('mine', mode, mineCache, minePrevious);
+      const keepMineVisible = deps.getLeaderboardOpen() && minePrevious.entries.length > 0;
+      if (!keepMineVisible) {
+        applyCacheToState('mine', mode, mineCache, minePrevious);
+      }
     } else {
       setLeaderboardState('mine', { status: 'empty', entries: [] });
       resetCache('mine');

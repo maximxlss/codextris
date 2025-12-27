@@ -296,6 +296,7 @@
     gap: 0.4rem;
     text-align: left;
     min-height: 92px;
+    container-type: inline-size;
   }
 
   .leaderboard-title {
@@ -339,17 +340,36 @@
     font-variant-numeric: tabular-nums;
     flex: 1 1 auto;
     min-width: 0;
-    font-size: clamp(0.7rem, 1.4vw, 0.95rem);
+    font-size: clamp(0.6rem, 8cqw, 0.80rem);
     line-height: 1.1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
+    max-inline-size: 60cqw;
+  }
+
+  .leaderboard-entry strong.name-tight {
+    font-size: clamp(0.55rem, 5.5cqw, 0.67rem);
+    letter-spacing: 0.02em;
+    max-inline-size: 60cqw;
+  }
+
+  .leaderboard-entry strong.name-micro {
+    font-size: clamp(0.5rem, 3cqw, 0.55rem);
+    letter-spacing: 0.01em;
+    max-inline-size: 60cqw;
   }
 
   .leaderboard-entry span {
     font-variant-numeric: tabular-nums;
     color: var(--accent);
     flex: 0 0 auto;
+  }
+
+  .leaderboard-card p {
+    margin: 0;
+    line-height: 1.25;
   }
 
   .leaderboard-current {

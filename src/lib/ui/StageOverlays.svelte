@@ -1,6 +1,7 @@
 <script lang="ts">
   import './StageOverlays.css';
   import { getGamePageContext } from '$lib/ui/game-page';
+  import { MAX_NICKNAME_LENGTH } from '$lib/leaderboard/constants';
 
   const { view, actions } = getGamePageContext();
   const state = view.state;
@@ -53,6 +54,7 @@
             type="text"
             placeholder="Set your name"
             value={$state.nicknameDraft}
+            maxlength={MAX_NICKNAME_LENGTH}
             on:input={handleNicknameInput}
             on:keydown={(event) => {
               if (event.key === 'Enter') {

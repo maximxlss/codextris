@@ -15,7 +15,7 @@ This project now uses Cloudflare Workers + D1 for leaderboards. The browser call
 npx wrangler d1 create codextris-db
 ```
 
-Copy the `[[d1_databases]]` block from the output into `wrangler.toml` (or replace the placeholder ID).
+Copy the `[[d1_databases]]` block from the output into `wrangler.toml` (or replace the ID).
 
 ## 2) Apply migrations
 

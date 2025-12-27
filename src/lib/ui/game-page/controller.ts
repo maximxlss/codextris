@@ -15,16 +15,8 @@ import type { GameResult, LeaderboardScope } from '$lib/game/leaderboard';
 import { cancelLeaderboardSessionBeacon } from '$lib/game/leaderboardApi';
 import type { SessionInfo } from '$lib/leaderboard/types';
 import { rankForMetric, type LeaderboardState } from '$lib/game/ui/leaderboardState';
-import {
-  formatClock,
-  formatMetricValue,
-  formatRank,
-  formatRate,
-  formatLeaderboardDate,
-  formatLeaderboardDateTime
-} from '$lib/game/ui/format';
+import { formatRank } from '$lib/game/ui/format';
 import { startResumeCountdown } from '$lib/game/ui/resume';
-import { endReasonLabel, modeTagline, statusLabel } from '$lib/ui/labels';
 import {
   loadStoredAudioMuted,
   loadStoredConfig,
@@ -72,9 +64,10 @@ import {
   type LockResult
 } from '$lib/game/types';
 import { CUSTOM_PRESET, HANDLING_PRESETS, type HandlingPresetId } from '$lib/ui/handlingPresets';
-import type { UiState } from '$lib/ui/types';
 import { deriveGamePage } from './derive';
 import type { GamePageState, SubmitStatus } from './state';
+import { createInitialState } from './controllerState';
+import { buildActions, buildElements, buildView, type DomRefs } from './controllerBuilders';
 
 export type GamePageActions = {
   startGame: () => void;
@@ -151,58 +144,80 @@ type ControllerOptions = {
   now?: () => number;
 };
 
-const createInitialState = (
-  game: GameState,
-  ui: UiState,
-  configDraft: GameConfig,
-  selectedModeId: GameModeId
-): GamePageState => ({
-  game,
-  ui,
-  configDraft,
-  selectedModeId,
-  selectedPreset: 'classic',
-  nickname: '',
-  nicknameDraft: '',
-  audioMuted: false,
-  showControls: false,
-  showSettings: false,
-  leaderboardOpen: false,
-  leaderboardTab: 'global',
-  showViewportGuard: false,
-  bypassViewportGuard: false,
-  resumeCountdown: 0,
-  submitStatus: 'idle',
-  submitError: null,
-  lastResult: null,
-  lastStatus: game.status,
-  leaderboardGlobal: { status: 'idle', entries: [] },
-  leaderboardMine: { status: 'idle', entries: [] },
-  backendAlerts: [],
-  restartCooldownUntil: 0,
-  sessionInfo: null,
-  sessionError: null,
-  sessionStatus: 'idle',
-  lastSubmittedKey: null
+type RuntimeRefs = {
+  dom: DomRefs;
+  render: {
+    ctx: CanvasRenderingContext2D | null;
+    options: ReturnType<typeof createRenderOptions>;
+  };
+  frame: {
+    accumulator: number;
+    resumeDeadline: number;
+    clearBanner: ClearBanner | null;
+  };
+  leaderboard: {
+    timer: ReturnType<typeof setInterval> | null;
+    lastOpen: boolean;
+    modeId: GameModeId | null;
+    lastNickname: string;
+    requestId: number;
+  };
+  session: {
+    lastNonce: string;
+    requested: boolean;
+    promise: Promise<void> | null;
+    epoch: number;
+  };
+  flags: {
+    audioUnlocked: boolean;
+    pausedForModal: boolean;
+  };
+};
+
+const createRuntimeRefs = (): RuntimeRefs => ({
+  dom: {
+    canvasEl: null,
+    layoutEl: null,
+    stageEl: null,
+    controlsCardEl: null,
+    settingsCardEl: null,
+    leaderboardCardEl: null
+  },
+  render: {
+    ctx: null,
+    options: createRenderOptions(28)
+  },
+  frame: {
+    accumulator: 0,
+    resumeDeadline: 0,
+    clearBanner: null
+  },
+  leaderboard: {
+    timer: null,
+    lastOpen: false,
+    modeId: null,
+    lastNickname: '',
+    requestId: 0
+  },
+  session: {
+    lastNonce: '',
+    requested: false,
+    promise: null,
+    epoch: 0
+  },
+  flags: {
+    audioUnlocked: false,
+    pausedForModal: false
+  }
 });
+
 
 export const createGamePageController = (options: ControllerOptions = {}): GamePageController => {
   const now = options.now ?? (() => Date.now());
-
-  let canvasEl: HTMLCanvasElement | null = null;
-  let layoutEl: HTMLElement | null = null;
-  let stageEl: HTMLDivElement | null = null;
-  let controlsCardEl: HTMLDivElement | null = null;
-  let settingsCardEl: HTMLDivElement | null = null;
-  let leaderboardCardEl: HTMLDivElement | null = null;
-
-  let ctx: CanvasRenderingContext2D | null = null;
-  let renderOptions = createRenderOptions(28);
+  const refs = createRuntimeRefs();
 
   const input = new InputController();
   const audio = new AudioManager();
-  let audioUnlocked = false;
-  let pausedForModal = false;
 
   const selectedModeId = DEFAULT_MODE_ID;
   const selectedMode = getModeById(selectedModeId);
@@ -222,19 +237,6 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     deriveGamePage($state, { getModeById, rankForMetric, formatRank })
   );
 
-  let accumulator = 0;
-  let resumeDeadline = 0;
-  let clearBanner: ClearBanner | null = null;
-  let leaderboardTimer: ReturnType<typeof setInterval> | null = null;
-  let lastLeaderboardOpen = false;
-  let lastSessionNonce = '';
-  let sessionRequested = false;
-  let sessionPromise: Promise<void> | null = null;
-  let sessionEpoch = 0;
-  let leaderboardModeId: GameModeId | null = null;
-  let lastNicknameRefresh = '';
-  let leaderboardRequestId = 0;
-
   const SCORING_LEGEND = createScoringLegend(DEFAULT_RULES);
 
   const isCompetitiveMode = (mode: GameModeDefinition) => Boolean(mode.metric);
@@ -245,13 +247,13 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
 
   const beginResumeCountdown = () => {
     const started = startResumeCountdown(RESUME_COUNTDOWN_MS, performance.now());
-    resumeDeadline = started.deadline;
+    refs.frame.resumeDeadline = started.deadline;
     setState({ resumeCountdown: started.seconds });
     input.reset();
   };
 
   const cancelResumeCountdown = () => {
-    resumeDeadline = 0;
+    refs.frame.resumeDeadline = 0;
     setState({ resumeCountdown: 0 });
   };
 
@@ -262,14 +264,14 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
 
   const handleSessionNonce = (session: SessionInfo | null) => {
     if (!session?.nonce) {
-      lastSessionNonce = '';
+      refs.session.lastNonce = '';
       if (now() >= stateRef.restartCooldownUntil) {
         setState({ restartCooldownUntil: 0 });
       }
       return;
     }
-    if (session.nonce !== lastSessionNonce) {
-      lastSessionNonce = session.nonce;
+    if (session.nonce !== refs.session.lastNonce) {
+      refs.session.lastNonce = session.nonce;
       bumpRestartCooldown(1000);
     }
   };
@@ -287,9 +289,9 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     setLeaderboardOpen: (value) => setState({ leaderboardOpen: value }),
     getBackendAlerts: () => stateRef.backendAlerts,
     setBackendAlerts: (value) => setState({ backendAlerts: value }),
-    getPausedForModal: () => pausedForModal,
+    getPausedForModal: () => refs.flags.pausedForModal,
     setPausedForModal: (value) => {
-      pausedForModal = value;
+      refs.flags.pausedForModal = value;
     },
     getDisplayMode: () => getDerived().displayMode,
     getHasNickname: () => getDerived().hasNickname,
@@ -314,8 +316,8 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
 
   const { leaderboardController, resetSessionState, startRunSession } = createPageControllers({
     session: {
-      getSessionEpoch: () => sessionEpoch,
-      bumpSessionEpoch: () => (sessionEpoch += 1),
+      getSessionEpoch: () => refs.session.epoch,
+      bumpSessionEpoch: () => (refs.session.epoch += 1),
       getSessionInfo: () => stateRef.sessionInfo,
       setSessionInfo: (info) => {
         setState({ sessionInfo: info });
@@ -323,12 +325,12 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
       },
       setSessionError: (error) => setState({ sessionError: error }),
       setSessionStatus: (status) => setState({ sessionStatus: status }),
-      getSessionRequested: () => sessionRequested,
+      getSessionRequested: () => refs.session.requested,
       setSessionRequested: (value) => {
-        sessionRequested = value;
+        refs.session.requested = value;
       },
       setSessionPromise: (promise) => {
-        sessionPromise = promise;
+        refs.session.promise = promise;
       },
       getHasNickname: () => getDerived().hasNickname,
       getDisplayName: () => getDerived().displayName,
@@ -345,25 +347,25 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
       getLeaderboardTab: () => stateRef.leaderboardTab,
       setLeaderboardTab: (tab) => setState({ leaderboardTab: tab }),
       getLeaderboardOpen: () => stateRef.leaderboardOpen,
-      getLastLeaderboardOpen: () => lastLeaderboardOpen,
+      getLastLeaderboardOpen: () => refs.leaderboard.lastOpen,
       setLastLeaderboardOpen: (value) => {
-        lastLeaderboardOpen = value;
+        refs.leaderboard.lastOpen = value;
       },
-      getLeaderboardTimer: () => leaderboardTimer,
+      getLeaderboardTimer: () => refs.leaderboard.timer,
       setLeaderboardTimer: (timer) => {
-        leaderboardTimer = timer;
+        refs.leaderboard.timer = timer;
       },
-      getLeaderboardModeId: () => leaderboardModeId,
+      getLeaderboardModeId: () => refs.leaderboard.modeId,
       setLeaderboardModeId: (id) => {
-        leaderboardModeId = id;
+        refs.leaderboard.modeId = id;
       },
-      getLastNicknameRefresh: () => lastNicknameRefresh,
+      getLastNicknameRefresh: () => refs.leaderboard.lastNickname,
       setLastNicknameRefresh: (value) => {
-        lastNicknameRefresh = value;
+        refs.leaderboard.lastNickname = value;
       },
-      getRequestId: () => leaderboardRequestId,
+      getRequestId: () => refs.leaderboard.requestId,
       setRequestId: (value) => {
-        leaderboardRequestId = value;
+        refs.leaderboard.requestId = value;
       },
       raiseBackendError,
       limit: LEADERBOARD_LIMIT
@@ -389,9 +391,9 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
 
   const toggleAudioMuted = () => {
     const next = !stateRef.audioMuted;
-    if (!next && !audioUnlocked) {
+    if (!next && !refs.flags.audioUnlocked) {
       audio.unlock();
-      audioUnlocked = true;
+      refs.flags.audioUnlocked = true;
     }
     setAudioMuted(next);
   };
@@ -414,35 +416,35 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     setSubmitError: (error) => setState({ submitError: error }),
     setLastSubmittedKey: (value) => setState({ lastSubmittedKey: value }),
     setClearBanner: (banner) => {
-      clearBanner = banner;
+      refs.frame.clearBanner = banner;
     },
     getShowViewportGuard: () => stateRef.showViewportGuard,
     getBypassViewportGuard: () => stateRef.bypassViewportGuard,
-    getAudioUnlocked: () => audioUnlocked,
+    getAudioUnlocked: () => refs.flags.audioUnlocked,
     setAudioUnlocked: (value) => {
-      audioUnlocked = value;
+      refs.flags.audioUnlocked = value;
     },
     getRestartCooldownUntil: () => stateRef.restartCooldownUntil,
     bumpRestartCooldown,
     cancelResumeCountdown,
     beginResumeCountdown,
-    getResumeDeadline: () => resumeDeadline,
+    getResumeDeadline: () => refs.frame.resumeDeadline,
     setPausedForModal: (value) => {
-      pausedForModal = value;
+      refs.flags.pausedForModal = value;
     },
     isCompetitiveMode
   });
 
   const layoutManager = createLayoutManager({
-    getCanvas: () => canvasEl,
-    getLayoutEl: () => layoutEl,
-    getStageEl: () => stageEl,
-    getRenderOptions: () => renderOptions,
+    getCanvas: () => refs.dom.canvasEl,
+    getLayoutEl: () => refs.dom.layoutEl,
+    getStageEl: () => refs.dom.stageEl,
+    getRenderOptions: () => refs.render.options,
     setRenderOptions: (value) => {
-      renderOptions = value;
+      refs.render.options = value;
     },
     setCtx: (value) => {
-      ctx = value;
+      refs.render.ctx = value;
     },
     setShowViewportGuard: (value) => {
       setState({ showViewportGuard: value });
@@ -458,11 +460,11 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     isTrapOpen: () => stateRef.showControls || stateRef.showSettings || stateRef.leaderboardOpen,
     getActiveModalEl: () =>
       stateRef.showControls
-        ? controlsCardEl
+        ? refs.dom.controlsCardEl
         : stateRef.showSettings
-          ? settingsCardEl
+          ? refs.dom.settingsCardEl
           : stateRef.leaderboardOpen
-            ? leaderboardCardEl
+            ? refs.dom.leaderboardCardEl
             : null
   });
 
@@ -474,7 +476,7 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     getSessionInfo: () => stateRef.sessionInfo,
     getSessionStatus: () => stateRef.sessionStatus,
     getSessionError: () => stateRef.sessionError,
-    getSessionPromise: () => sessionPromise,
+    getSessionPromise: () => refs.session.promise,
     setSessionInfo: (value) => {
       setState({ sessionInfo: value });
       handleSessionNonce(value);
@@ -512,7 +514,7 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
   };
 
   const handleEvents = (events: ReturnType<typeof updateGame>) => {
-    if (!audioUnlocked) return;
+    if (!refs.flags.audioUnlocked) return;
     if (events.hold) audio.play('hold');
     if (events.rotated) audio.play('rotate');
     if (events.hardDrop) audio.play('hardDrop');
@@ -524,7 +526,7 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
 
   const showClearBanner = (lockResult: LockResult, nowValue: number) => {
     const banner = buildClearBanner(lockResult, nowValue);
-    if (banner) clearBanner = banner;
+    if (banner) refs.frame.clearBanner = banner;
   };
 
   const frameLoop = createFrameLoop({
@@ -539,13 +541,13 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     getShowViewportGuard: () => stateRef.showViewportGuard,
     getBypassViewportGuard: () => stateRef.bypassViewportGuard,
     getFixedDt: () => FIXED_DT,
-    getAccumulator: () => accumulator,
+    getAccumulator: () => refs.frame.accumulator,
     setAccumulator: (value) => {
-      accumulator = value;
+      refs.frame.accumulator = value;
     },
-    getResumeDeadline: () => resumeDeadline,
+    getResumeDeadline: () => refs.frame.resumeDeadline,
     setResumeDeadline: (value) => {
-      resumeDeadline = value;
+      refs.frame.resumeDeadline = value;
     },
     setResumeCountdown: (value) => setState({ resumeCountdown: value }),
     setGameStatus: (status: GameStatus) => {
@@ -554,12 +556,12 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     },
     getLastStatus: () => stateRef.lastStatus,
     setLastStatus: (status) => setState({ lastStatus: status }),
-    getClearBanner: () => clearBanner,
+    getClearBanner: () => refs.frame.clearBanner,
     setClearBanner: (banner) => {
-      clearBanner = banner;
+      refs.frame.clearBanner = banner;
     },
-    getCtx: () => ctx,
-    getRenderOptions: () => renderOptions,
+    getCtx: () => refs.render.ctx,
+    getRenderOptions: () => refs.render.options,
     renderGame,
     updateUi
   });
@@ -608,14 +610,14 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     },
     audio: {
       controller: audio,
-      getAudioUnlocked: () => audioUnlocked,
+      getAudioUnlocked: () => refs.flags.audioUnlocked,
       setAudioUnlocked: (value) => {
-        audioUnlocked = value;
+        refs.flags.audioUnlocked = value;
       }
     },
     frame: {
       setAccumulator: (value) => {
-        accumulator = value;
+        refs.frame.accumulator = value;
       },
       handleFrameInput: frameLoop.handleFrameInput,
       stepSimulation: frameLoop.stepSimulation,
@@ -640,16 +642,16 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
   const handleLeaderboardChange = () => {
     if (!browser || !leaderboardController) return;
     const derivedState = getDerived();
-    if (derivedState.displayMode.id !== leaderboardModeId) {
+    if (derivedState.displayMode.id !== refs.leaderboard.modeId) {
       leaderboardController.handleModeChange(derivedState.displayMode);
     }
-    if (stateRef.leaderboardOpen !== lastLeaderboardOpen) {
+    if (stateRef.leaderboardOpen !== refs.leaderboard.lastOpen) {
       leaderboardController.handleOpenChange(derivedState.displayMode);
-      lastLeaderboardOpen = stateRef.leaderboardOpen;
+      refs.leaderboard.lastOpen = stateRef.leaderboardOpen;
     }
-    if (derivedState.nicknameValue !== lastNicknameRefresh) {
+    if (derivedState.nicknameValue !== refs.leaderboard.lastNickname) {
       leaderboardController.handleNicknameChange(derivedState.displayMode);
-      lastNicknameRefresh = derivedState.nicknameValue;
+      refs.leaderboard.lastNickname = derivedState.nicknameValue;
     }
   };
 
@@ -658,81 +660,30 @@ export const createGamePageController = (options: ControllerOptions = {}): GameP
     handleLeaderboardChange();
   });
 
-  const actions: GamePageActions = {
-    startGame: gameFlow.startGame,
-    restartGame: gameFlow.restartGame,
-    togglePause: gameFlow.togglePause,
-    returnToMenu: gameFlow.returnToMenu,
-    requestModeSwitch: gameFlow.requestModeSwitch,
+  const actions: GamePageActions = buildActions({
+    gameFlow,
     saveNickname,
     retrySubmit,
-    handlePrimaryAction: gameFlow.handlePrimaryAction,
     openControlsModal,
     openSettingsModal,
     openLeaderboardModal,
     closeModals,
     closeLeaderboardModal,
     toggleAudioMuted,
-    onBypassViewportGuard: () => setState({ bypassViewportGuard: true }),
-    setLeaderboardTab: (scope) => setState({ leaderboardTab: scope }),
-    setNicknameDraft: (value) => setState({ nicknameDraft: value }),
+    setState,
     dismissBackendAlert
-  };
+  });
 
-  const elements: GamePageElements = {
-    setCanvas: (el) => {
-      canvasEl = el;
-    },
-    setLayout: (el) => {
-      layoutEl = el;
-    },
-    setStage: (el) => {
-      stageEl = el;
-    },
-    setControlsCard: (el) => {
-      controlsCardEl = el;
-    },
-    setSettingsCard: (el) => {
-      settingsCardEl = el;
-    },
-    setLeaderboardCard: (el) => {
-      leaderboardCardEl = el;
-    }
-  };
+  const elements: GamePageElements = buildElements(refs.dom);
 
-  const view: GamePageView = {
-    state: stateStore,
-    derived: derivedStore,
-    modes: GAME_MODES,
-    presets: HANDLING_PRESETS,
+  const view: GamePageView = buildView({
+    stateStore,
+    derivedStore,
     scoringLegend: SCORING_LEGEND,
-    config: {
-      presetName: configManager.presetName,
-      applyPreset: configManager.applyPreset,
-      handleNumberInput: configManager.handleNumberInput
-    },
-    helpers: {
-      isCompetitiveMode,
-      canRestart: gameFlow.canRestart,
-      primaryLabel: gameFlow.primaryLabel
-    },
-    format: {
-      formatClock,
-      formatRate,
-      formatMetricValue,
-      formatRank,
-      formatLeaderboardDate,
-      formatLeaderboardDateTime
-    },
-    labels: {
-      endReasonLabel,
-      statusLabel,
-      modeTagline
-    },
-    constants: {
-      customPresetId: CUSTOM_PRESET
-    }
-  };
+    configManager,
+    gameFlow,
+    isCompetitiveMode
+  });
 
   return { view, actions, elements, init };
 };
