@@ -43,5 +43,6 @@
 - Static deployment uses `@sveltejs/adapter-static` with `build/` as both pages and assets.
 - Docker dev sets `CHOKIDAR_USEPOLLING=true` to improve file watching in containers.
 
-## Other
-- Don't introduce or suggest e2e smoke tests. No need, manual testing is sufficient for this project.
+# ExecPlans
+When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
+

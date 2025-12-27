@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb, jsonError, parseJson } from '$lib/server/leaderboard';
+import type { LeaderboardBatchRequest } from '$lib/leaderboard/types';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -26,25 +27,22 @@ export const POST: RequestHandler = async (event) => {
   const db = getDb(event);
   if (!db) return jsonError('offline', 503);
 
-  const body = await parseJson(event.request);
-  const modes = Array.isArray((body as { modes?: unknown })?.modes)
-    ? ((body as { modes: unknown[] }).modes.filter((value) => typeof value === 'string') as string[])
+  const body = (await parseJson(event.request)) as LeaderboardBatchRequest | null;
+  const modes = Array.isArray(body?.modes)
+    ? body?.modes.filter((value) => typeof value === 'string')
     : [];
   if (modes.length === 0) {
     return json({ entries: [] });
   }
 
-  const scopeRaw = (body as { scope?: unknown })?.scope;
+  const scopeRaw = body?.scope;
   const scope = scopeRaw === 'both' ? 'both' : scopeRaw === 'mine' ? 'mine' : 'global';
-  const playerName =
-    typeof (body as { playerName?: unknown })?.playerName === 'string'
-      ? (body as { playerName: string }).playerName.trim()
-      : '';
+  const playerName = typeof body?.playerName === 'string' ? body.playerName.trim() : '';
   if (scope === 'mine' && !playerName) {
     return json({ entries: [] });
   }
 
-  const rawLimit = (body as { limit?: unknown })?.limit;
+  const rawLimit = body?.limit;
   const normalizedLimit =
     typeof rawLimit === 'number' && Number.isFinite(rawLimit) ? Math.round(rawLimit) : DEFAULT_LIMIT;
   const limit = Math.min(Math.max(normalizedLimit, 1), MAX_LIMIT);

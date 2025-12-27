@@ -163,6 +163,7 @@ export interface GameState {
   rng: RngState;
   lastMoveWasRotation: boolean;
   lastRotationKick: RotationKick | null;
+  lastRotationPosition: { x: number; y: number } | null;
   rules: GameRules;
   mode: GameModeState;
 }

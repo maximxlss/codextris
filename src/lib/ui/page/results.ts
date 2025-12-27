@@ -1,5 +1,6 @@
 import { buildResult, toSubmitPayload, type GameResult } from '$lib/game/leaderboard';
-import { submitScore, type SessionInfo } from '$lib/game/leaderboardApi';
+import { submitScore } from '$lib/game/leaderboardApi';
+import type { SessionInfo } from '$lib/leaderboard/types';
 import type { GameModeDefinition } from '$lib/game/modes';
 import type { GameState } from '$lib/game/types';
 import type { SessionStatus } from '$lib/ui/page/session';
@@ -87,7 +88,7 @@ export const createResultsManager = (deps: ResultsDeps) => {
     deps.setSubmitStatus('idle');
     deps.setSubmitError(null);
     deps.setLastSubmittedKey(null);
-    if (result && deps.game.mode.endReason !== 'quit') {
+    if (result && deps.game.mode.endReason !== 'quit' && deps.game.mode.endReason !== 'topout') {
       void submitResult(result);
     }
   };

@@ -1,24 +1,24 @@
 <script lang="ts">
-  type BackendAlert = { id: number; title: string; message: string };
+  import { getGamePageContext } from '$lib/ui/game-page';
 
-  export let alerts: BackendAlert[] = [];
-  export let onDismiss: (id: number) => void;
+  const { view, actions } = getGamePageContext();
+  const derived = view.derived;
 </script>
 
-{#if alerts.length > 0}
+{#if $derived.backendAlertStack.length > 0}
   <div class="backend-alerts" role="status" aria-live="polite">
     <div class="backend-alert-stack">
-      {#each alerts as alert, index (alert.id)}
+      {#each $derived.backendAlertStack as alert, index (alert.id)}
         <div
           class="backend-alert-card"
           style={`--stack-offset: ${index * 8}px; --stack-index: ${index}`}
           role="button"
           tabindex="0"
-          on:click={() => onDismiss(alert.id)}
+          on:click={() => actions.dismissBackendAlert(alert.id)}
           on:keydown={(event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();
-              onDismiss(alert.id);
+              actions.dismissBackendAlert(alert.id);
             }
           }}
         >
@@ -27,7 +27,7 @@
             <span class="backend-alert-label">Error</span>
             <code>{alert.message}</code>
           </div>
-          <button class="primary" on:click|stopPropagation={() => onDismiss(alert.id)}>
+          <button class="primary" on:click|stopPropagation={() => actions.dismissBackendAlert(alert.id)}>
             Acknowledge
           </button>
         </div>

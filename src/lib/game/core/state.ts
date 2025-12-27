@@ -40,7 +40,8 @@ export const createGameState = (
     mode: createModeState(mode.id),
     rng,
     lastMoveWasRotation: false,
-    lastRotationKick: null
+    lastRotationKick: null,
+    lastRotationPosition: null
   };
   spawnNextPiece(state);
   return state;
@@ -78,5 +79,6 @@ export const resetGame = (
   state.mode = createModeState(mode.id);
   state.lastMoveWasRotation = false;
   state.lastRotationKick = null;
+  state.lastRotationPosition = null;
   spawnNextPiece(state);
 };

@@ -258,6 +258,12 @@ export const detectSpin = (state: GameState): { kind: LockResultKind; spinType?:
   }
 
   if (type !== 'O') {
+    if (state.lastRotationPosition) {
+      const { x: rx, y: ry } = state.lastRotationPosition;
+      if (state.active.x !== rx || state.active.y !== ry) {
+        return { kind: 'none' };
+      }
+    }
     const immobile =
       collides(state, state.active, -1, 0) &&
       collides(state, state.active, 1, 0) &&

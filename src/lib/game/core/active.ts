@@ -32,6 +32,7 @@ export const spawnNextPiece = (state: GameState): boolean => {
   state.gravityTimer = 0;
   state.lastMoveWasRotation = false;
   state.lastRotationKick = null;
+  state.lastRotationPosition = null;
   if (collides(state, state.active)) {
     endMode(state, 'topout');
     return false;

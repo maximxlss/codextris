@@ -1,7 +1,7 @@
 import { isLeaderboardEnabled } from '$lib/leaderboard/config';
 import { cancelLeaderboardSession, startLeaderboardSession } from '$lib/game/leaderboardApi';
 import type { GameModeDefinition } from '$lib/game/modes';
-import type { SessionInfo } from '$lib/game/leaderboardApi';
+import type { SessionInfo } from '$lib/leaderboard/types';
 
 export type SessionStatus =
   | 'idle'
@@ -104,9 +104,10 @@ export const createSessionManager = (deps: SessionDeps) => {
         status = 'blocked';
       }
       deps.setSessionStatus(status);
-      deps.setSessionError(error ?? 'Unable to start session.');
-      if (error && status === 'error') {
-        deps.raiseBackendError('Leaderboard session failed', error);
+      const message = error ?? 'Unable to start session.';
+      deps.setSessionError(message);
+      if (message && error !== 'nickname-required' && error !== 'aborted') {
+        deps.raiseBackendError('Leaderboard session failed', message);
       }
       deps.setSessionInfo(null);
       return;

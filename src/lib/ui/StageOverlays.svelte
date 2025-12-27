@@ -1,65 +1,32 @@
 <script lang="ts">
-  import type { GameModeDefinition } from '$lib/game/modes';
-  import type { GameEndReason } from '$lib/game/types';
-  import type { LeaderboardEntry } from '$lib/game/leaderboard';
   import './StageOverlays.css';
-  import type { UiState } from '$lib/ui/types';
-  import type { HandlingPresetId } from '$lib/ui/handlingPresets';
+  import { getGamePageContext } from '$lib/ui/game-page';
 
-  export let ui: UiState;
-  export let showViewportGuard = false;
-  export let bypassViewportGuard = false;
-  export let onBypassViewportGuard: () => void;
+  const { view, actions } = getGamePageContext();
+  const state = view.state;
+  const derived = view.derived;
+  const format = view.format;
+  const labels = view.labels;
+  const config = view.config;
+  const helpers = view.helpers;
 
-  export let selectedMode: GameModeDefinition;
-  export let selectedPreset: HandlingPresetId;
-  export let presetName: (id: HandlingPresetId) => string;
-  export let nicknameDraft = '';
-  export let hasNickname = false;
-  export let mineTopEntry: LeaderboardEntry | null = null;
-  export let formatMetricValue: (value: number | null, mode: GameModeDefinition) => string;
-  export let startGame: () => void;
-  export let saveNickname: () => void;
-
-  export let resumeCountdown = 0;
-  export let showControls = false;
-  export let showSettings = false;
-  export let leaderboardOpen = false;
-
-  export let currentMode: GameModeDefinition;
-  export let isCompetitiveMode: (mode: GameModeDefinition) => boolean;
-  export let togglePause: () => void;
-  export let restartGame: () => void;
-  export let canRestart: (status: UiState['status']) => boolean;
-  export let returnToMenu: () => void;
-
-  export let endReasonLabel: (reason: GameEndReason | null) => string;
-  export let resultTimeMs = 0;
-  export let resultPieces = 0;
-  export let resultLpm = 0;
-  export let resultPps = 0;
-  export let resultScore = 0;
-  export let resultLines = 0;
-  export let submitStatus: 'idle' | 'pending' | 'success' | 'error' | 'offline' = 'idle';
-  export let submitError: string | null = null;
-  export let retrySubmit: () => void;
-  export let globalRankLabel = '—';
-  export let mineRankLabel = '—';
-  export let formatClock: (ms: number, showMs?: boolean) => string;
-  export let formatRate: (value: number) => string;
+  const handleNicknameInput = (event: Event) => {
+    const target = event.target as HTMLInputElement | null;
+    actions.setNicknameDraft(target?.value ?? '');
+  };
 </script>
 
-{#if showViewportGuard && !bypassViewportGuard}
+{#if $state.showViewportGuard && !$state.bypassViewportGuard}
   <div class="overlay guard">
     <div class="onboard-card">
       <h2>Screen too small</h2>
       <p>This layout needs more space to stay readable. Try a wider window or landscape orientation.</p>
-      <button class="primary" on:click={onBypassViewportGuard}>Continue anyway</button>
+      <button class="primary" on:click={actions.onBypassViewportGuard}>Continue anyway</button>
     </div>
   </div>
 {/if}
 
-{#if ui.status === 'menu' && (!showViewportGuard || bypassViewportGuard)}
+{#if $state.ui.status === 'menu' && (!$state.showViewportGuard || $state.bypassViewportGuard)}
   <div class="overlay ready">
     <div class="onboard-card">
       <p class="onboard-tag">Choose a mode</p>
@@ -69,15 +36,15 @@
       </p>
       <div class="selected-mode">
         <span>Selected mode</span>
-        <strong>{selectedMode.label}</strong>
+        <strong>{$derived.selectedMode.label}</strong>
       </div>
       <p class="mode-hint">
-        Handling preset: <strong>{presetName(selectedPreset)}</strong>
+        Handling preset: <strong>{config.presetName($state.selectedPreset)}</strong>
       </p>
       <div class="nickname-card compact">
         <div class="nickname-header">
           <span>Nickname</span>
-          {#if hasNickname}
+          {#if $derived.hasNickname}
             <span class="nickname-pill">Saved</span>
           {/if}
         </div>
@@ -85,28 +52,29 @@
           <input
             type="text"
             placeholder="Set your name"
-            bind:value={nicknameDraft}
+            value={$state.nicknameDraft}
+            on:input={handleNicknameInput}
             on:keydown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
-                saveNickname();
+                actions.saveNickname();
               }
             }}
           />
-          <button class="ghost small" on:click={saveNickname}>Save</button>
+          <button class="ghost small" on:click={actions.saveNickname}>Save</button>
         </div>
         <p class="nickname-hint">Set a nickname to appear on leaderboards.</p>
       </div>
-      {#if selectedMode.metric}
-        {#if hasNickname && mineTopEntry}
+      {#if $derived.selectedMode.metric}
+        {#if $derived.hasNickname && $derived.mineTopEntry}
           <div class="best-card">
             <span class="result-label">My best</span>
-            <strong>{formatMetricValue(mineTopEntry.metricValue, selectedMode)}</strong>
+            <strong>{format.formatMetricValue($derived.mineTopEntry.metricValue, $derived.selectedMode)}</strong>
           </div>
         {/if}
       {/if}
       <div class="onboard-actions">
-        <button class="primary" on:click={startGame}>Start</button>
+        <button class="primary" on:click={actions.startGame}>Start</button>
       </div>
       <div class="onboard-keys">
         <span><kbd>Enter</kbd> Start</span>
@@ -118,145 +86,145 @@
   </div>
 {/if}
 
-{#if resumeCountdown > 0 && (!showViewportGuard || bypassViewportGuard)}
+{#if $state.resumeCountdown > 0 && (!$state.showViewportGuard || $state.bypassViewportGuard)}
   <div class="overlay resume">
     <div class="onboard-card">
       <h2>Resuming</h2>
-      <div class="countdown">{resumeCountdown}</div>
+      <div class="countdown">{$state.resumeCountdown}</div>
       <p>Press <kbd>P</kbd> or <kbd>Esc</kbd> to cancel.</p>
     </div>
   </div>
 {/if}
 
-{#if ui.status === 'paused'
-  && resumeCountdown === 0
-  && !showControls
-  && !showSettings
-  && !leaderboardOpen
-  && (!showViewportGuard || bypassViewportGuard)}
+{#if $state.ui.status === 'paused'
+  && $state.resumeCountdown === 0
+  && !$state.showControls
+  && !$state.showSettings
+  && !$state.leaderboardOpen
+  && (!$state.showViewportGuard || $state.bypassViewportGuard)}
   <div class="overlay">
     <div class="onboard-card">
       <h2>Paused</h2>
-      {#if isCompetitiveMode(currentMode)}
+      {#if helpers.isCompetitiveMode($derived.currentMode)}
         <p>Resuming disabled in competitive modes.</p>
         <p>Press <kbd>R</kbd> or click Restart to try again.</p>
-        <button class="primary" on:click={restartGame} disabled={!canRestart(ui.status)}>
+        <button class="primary" on:click={actions.restartGame} disabled={!helpers.canRestart($state.ui.status)}>
           Restart
         </button>
       {:else}
         <p>Press <kbd>P</kbd> or <kbd>Esc</kbd> to resume.</p>
-        <button class="primary" on:click={togglePause}>Resume</button>
+        <button class="primary" on:click={actions.togglePause}>Resume</button>
       {/if}
     </div>
   </div>
 {/if}
 
-{#if ui.status === 'results' && (!showViewportGuard || bypassViewportGuard)}
+{#if $state.ui.status === 'results' && (!$state.showViewportGuard || $state.bypassViewportGuard)}
   <div class="overlay results">
     <div class="onboard-card results-card">
-      <p class="onboard-tag">{currentMode.label} results</p>
+      <p class="onboard-tag">{$derived.currentMode.label} results</p>
       <h2>Session complete</h2>
-      {#if ui.modeEndReason}
-        <p class="result-reason">{endReasonLabel(ui.modeEndReason)}</p>
+      {#if $state.ui.modeEndReason}
+        <p class="result-reason">{labels.endReasonLabel($state.ui.modeEndReason)}</p>
       {/if}
       <div class="results-grid">
-        {#if currentMode.id === 'zen'}
+        {#if $derived.currentMode.id === 'zen'}
           <div>
             <span class="result-label">Session time</span>
-            <strong>{formatClock(resultTimeMs)}</strong>
+            <strong>{format.formatClock($derived.resultSummary.timeMs)}</strong>
           </div>
           <div>
             <span class="result-label">Pieces placed</span>
-            <strong>{resultPieces}</strong>
+            <strong>{$derived.resultSummary.pieces}</strong>
           </div>
-        {:else if currentMode.id === 'sprint40'}
+        {:else if $derived.currentMode.id === 'sprint40'}
           <div>
             <span class="result-label">Final time</span>
-            <strong>{formatClock(resultTimeMs, true)}</strong>
+            <strong>{format.formatClock($derived.resultSummary.timeMs, true)}</strong>
           </div>
           <div>
             <span class="result-label">Lines per minute</span>
-            <strong>{formatRate(resultLpm)}</strong>
+            <strong>{format.formatRate($derived.resultSummary.lpm)}</strong>
           </div>
         {:else}
           <div>
             <span class="result-label">Score</span>
-            <strong>{resultScore}</strong>
+            <strong>{$derived.resultSummary.score}</strong>
           </div>
           <div>
             <span class="result-label">PPS</span>
-            <strong>{formatRate(resultPps)}</strong>
+            <strong>{format.formatRate($derived.resultSummary.pps)}</strong>
           </div>
           <div>
             <span class="result-label">Lines</span>
-            <strong>{resultLines}</strong>
+            <strong>{$derived.resultSummary.lines}</strong>
           </div>
         {/if}
       </div>
-      {#if currentMode.metric}
-        {#if hasNickname && mineTopEntry}
+      {#if $derived.currentMode.metric}
+        {#if $derived.hasNickname && $derived.mineTopEntry}
           <div class="best-card">
             <span class="result-label">My best</span>
-            <strong>{formatMetricValue(mineTopEntry.metricValue, currentMode)}</strong>
+            <strong>{format.formatMetricValue($derived.mineTopEntry.metricValue, $derived.currentMode)}</strong>
           </div>
-        {:else if !hasNickname}
+        {:else if !$derived.hasNickname}
           <div class="best-card muted">
             <span class="result-label">Set a nickname</span>
             <strong>Scores go live once you save it</strong>
           </div>
         {/if}
       {/if}
-      {#if currentMode.metric && globalRankLabel !== '—'}
+      {#if $derived.currentMode.metric && $derived.globalRankLabel !== '—'}
         <div class="best-card">
           <span class="result-label">Global rank</span>
-          <strong>{globalRankLabel}</strong>
+          <strong>{$derived.globalRankLabel}</strong>
         </div>
-        {#if hasNickname && mineRankLabel !== '—'}
+        {#if $derived.hasNickname && $derived.mineRankLabel !== '—'}
           <div class="best-card">
             <span class="result-label">My rank</span>
-            <strong>{mineRankLabel}</strong>
+            <strong>{$derived.mineRankLabel}</strong>
           </div>
         {/if}
       {/if}
-      {#if currentMode.metric}
-        <div class={`submit-card ${submitStatus}`}>
+      {#if $derived.currentMode.metric}
+        <div class={`submit-card ${$state.submitStatus}`}>
           <span class="result-label">Leaderboard</span>
-          {#if ui.modeEndReason === 'quit'}
+          {#if $state.ui.modeEndReason === 'quit' || $state.ui.modeEndReason === 'topout'}
             <strong>Not submitted</strong>
-            <small>Run ended early</small>
-          {:else if submitStatus === 'pending'}
+            <small>{$state.ui.modeEndReason === 'topout' ? 'Topped out' : 'Run ended early'}</small>
+          {:else if $state.submitStatus === 'pending'}
             <strong>Submitting...</strong>
-          {:else if submitStatus === 'success'}
+          {:else if $state.submitStatus === 'success'}
             <strong>Submitted ✓</strong>
-          {:else if submitStatus === 'error'}
+          {:else if $state.submitStatus === 'error'}
             <strong>Submit failed</strong>
-            <button class="ghost small" on:click={retrySubmit}>Retry</button>
-          {:else if submitStatus === 'offline'}
+            <button class="ghost small" on:click={actions.retrySubmit}>Retry</button>
+          {:else if $state.submitStatus === 'offline'}
             <strong>Offline</strong>
           {:else}
             <strong>Ready</strong>
           {/if}
-          {#if submitError && submitStatus === 'error'}
-            <small>{submitError}</small>
+          {#if $state.submitError && $state.submitStatus === 'error'}
+            <small>{$state.submitError}</small>
           {/if}
         </div>
       {/if}
       <div class="onboard-actions">
-        <button class="primary" on:click={restartGame} disabled={!canRestart(ui.status)}>
+        <button class="primary" on:click={actions.restartGame} disabled={!helpers.canRestart($state.ui.status)}>
           Play again
         </button>
-        <button class="ghost" on:click={returnToMenu}>Change mode</button>
+        <button class="ghost" on:click={actions.returnToMenu}>Change mode</button>
       </div>
     </div>
   </div>
 {/if}
 
-{#if ui.status === 'gameover' && (!showViewportGuard || bypassViewportGuard)}
+{#if $state.ui.status === 'gameover' && (!$state.showViewportGuard || $state.bypassViewportGuard)}
   <div class="overlay">
     <div class="onboard-card">
       <h2>Game over</h2>
       <p>Press <kbd>R</kbd> or click Restart to try again.</p>
-      <button class="ghost danger" on:click={restartGame} disabled={!canRestart(ui.status)}>
+      <button class="ghost danger" on:click={actions.restartGame} disabled={!helpers.canRestart($state.ui.status)}>
         Restart
       </button>
     </div>

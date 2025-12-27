@@ -2,7 +2,7 @@ import type { GameModeDefinition } from '$lib/game/modes';
 import type { GameModeId } from '$lib/game/types';
 import type { LeaderboardScope } from '$lib/game/leaderboard';
 import type { LeaderboardState } from '$lib/game/ui/leaderboardState';
-import type { SessionInfo } from '$lib/game/leaderboardApi';
+import type { SessionInfo } from '$lib/leaderboard/types';
 import { createLeaderboardController } from '$lib/ui/page/leaderboards';
 import { createSessionManager, type SessionStatus } from '$lib/ui/page/session';
 

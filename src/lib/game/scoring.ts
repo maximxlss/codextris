@@ -74,10 +74,10 @@ export const createScoringLegend = (rules: GameRules) => {
     triple: rules.tSpinScores[3] ?? 0
   };
   return {
-    lines: `Line clears: Single ${lineScores.single} · Double ${lineScores.double} · Triple ${lineScores.triple} · Tetris ${lineScores.tetris}`,
-    tspins: `T-Spin: Single ${tSpinScores.single} · Double ${tSpinScores.double} · Triple ${tSpinScores.triple} (Mini/Spin use line scores)`,
-    combo: `Combo: multiplier (x${comboExamples.join(', x')}... max x${comboMax}).`,
-    b2b: `B2B: multiplier x${formatMultiplier(rules.backToBackMultiplier)}.`,
-    fullClear: `Full clear bonus: +${rules.fullClearBonus}.`
+    'LINES': `Single ${lineScores.single} · Double ${lineScores.double} · Triple ${lineScores.triple} · Tetris ${lineScores.tetris}`,
+    'T-SPINS': `Single ${tSpinScores.single} · Double ${tSpinScores.double} · Triple ${tSpinScores.triple}\n(Mini/Spin use line scores)`,
+    'COMBO': `Multiplier (x${comboExamples.join(', x')}... max x${comboMax}).`,
+    'B2B': `Multiplier x${formatMultiplier(rules.backToBackMultiplier)}.`,
+    'FULL CLEAR': `+${rules.fullClearBonus}.`
   };
 };

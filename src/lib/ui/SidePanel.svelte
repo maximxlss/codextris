@@ -1,51 +1,13 @@
 <script lang="ts">
-  import type { GameModeDefinition } from '$lib/game/modes';
-  import type { GameModeId, GameStatus } from '$lib/game/types';
-  import type { LeaderboardEntry, LeaderboardScope } from '$lib/game/leaderboard';
-  import type { LeaderboardState } from '$lib/game/ui/leaderboardState';
   import './SidePanel.css';
-  import type { UiState } from '$lib/ui/types';
+  import { getGamePageContext } from '$lib/ui/game-page';
 
-  export let ui: UiState;
-  export let selectedModeId: GameModeId;
-  export let modes: GameModeDefinition[];
-  export let displayMode: GameModeDefinition;
-
-  export let statusLabel: (status: GameStatus) => string;
-  export let modeTagline: (modeId: GameModeId) => string;
-  export let requestModeSwitch: (modeId: GameModeId) => void;
-  export let openSettingsModal: () => void;
-
-  export let linesRemaining = 0;
-  export let linesRemainingLabel = 'lines';
-  export let goalLines: number | null = null;
-  export let goalRemaining: number | null = null;
-  export let goalRemainingLabel = 'lines';
-  export let timeRemainingMs: number | null = null;
-
-  export let formatClock: (ms: number, showMs?: boolean) => string;
-
-  export let handlePrimaryAction: () => void;
-  export let primaryLabel: (status: GameStatus) => string;
-  export let canRestart: (status: GameStatus) => boolean;
-  export let restartGame: () => void;
-  export let resumeCountdown = 0;
-
-  export let openControlsModal: () => void;
-  export let toggleAudioMuted: () => void;
-  export let audioMuted = false;
-
-  export let leaderboardGlobal: LeaderboardState;
-  export let leaderboardMine: LeaderboardState;
-  export let globalTopEntry: LeaderboardEntry | null;
-  export let mineTopEntry: LeaderboardEntry | null;
-  export let hasNickname = false;
-  export let currentMetricValue: number | null;
-  export let globalRank: number | null;
-  export let mineRank: number | null;
-  export let formatMetricValue: (value: number | null, mode: GameModeDefinition) => string;
-  export let formatRank: (rank: number | null, entriesLength: number) => string;
-  export let openLeaderboardModal: (scope: LeaderboardScope) => void;
+  const { view, actions } = getGamePageContext();
+  const state = view.state;
+  const derived = view.derived;
+  const format = view.format;
+  const labels = view.labels;
+  const helpers = view.helpers;
 </script>
 
 <aside class="side">
@@ -53,83 +15,83 @@
     <p class="kicker">NEON TETRIS</p>
     <div class="brand-row">
       <h1>Codextris</h1>
-      <span class={`status-pill ${ui.status}`}>{statusLabel(ui.status)}</span>
-      <button class="ghost small settings-button" on:click={openSettingsModal}>
+      <span class={`status-pill ${$state.ui.status}`}>{labels.statusLabel($state.ui.status)}</span>
+      <button class="ghost small settings-button" on:click={actions.openSettingsModal}>
         Settings
       </button>
     </div>
   </div>
   <div class="mode-tabs">
-    {#each modes as mode (mode.id)}
+    {#each view.modes as mode (mode.id)}
       <button
-        class={`mode-tab ${selectedModeId === mode.id ? 'active' : ''}`}
-        on:click={() => requestModeSwitch(mode.id)}
+        class={`mode-tab ${$state.selectedModeId === mode.id ? 'active' : ''}`}
+        on:click={() => actions.requestModeSwitch(mode.id)}
       >
         <span>{mode.label}</span>
-        <small>{modeTagline(mode.id)}</small>
+        <small>{labels.modeTagline(mode.id)}</small>
       </button>
     {/each}
   </div>
   <div class="stat-grid">
-    {#if displayMode.id === 'zen'}
+    {#if $derived.displayMode.id === 'zen'}
       <div class="stat-card">
         <span>Session time</span>
-        <strong>{formatClock(ui.modeElapsedMs)}</strong>
+        <strong>{format.formatClock($state.ui.modeElapsedMs)}</strong>
       </div>
       <div class="stat-card">
         <span>Pieces</span>
-        <strong>{ui.modePieces}</strong>
+        <strong>{$state.ui.modePieces}</strong>
       </div>
       <div class="stat-card">
         <span>Level</span>
-        <strong>{ui.level}</strong>
-        <small>{linesRemaining} {linesRemainingLabel} to L{ui.level + 1}</small>
+        <strong>{$state.ui.level}</strong>
+        <small>{$derived.linesRemaining} {$derived.linesRemainingLabel} to L{$state.ui.level + 1}</small>
       </div>
       <div class="stat-card">
         <span>B2B</span>
-        <strong class:muted={!ui.backToBack} class:accent={ui.backToBack}>
-          {ui.backToBack ? `x${ui.b2bStreak}` : '—'}
+        <strong class:muted={!$state.ui.backToBack} class:accent={$state.ui.backToBack}>
+          {$state.ui.backToBack ? `x${$state.ui.b2bStreak}` : '—'}
         </strong>
       </div>
-    {:else if displayMode.id === 'sprint40'}
+    {:else if $derived.displayMode.id === 'sprint40'}
       <div class="stat-card">
         <span>Time</span>
-        <strong>{formatClock(ui.modeElapsedMs, true)}</strong>
+        <strong>{format.formatClock($state.ui.modeElapsedMs, true)}</strong>
       </div>
       <div class="stat-card">
         <span>Lines</span>
-        <strong>{ui.lines}</strong>
-        {#if goalLines !== null}
-          <small>{goalRemaining} {goalRemainingLabel} to {goalLines}</small>
+        <strong>{$state.ui.lines}</strong>
+        {#if $derived.goalLines !== null}
+          <small>{$derived.goalRemaining} {$derived.goalRemainingLabel} to {$derived.goalLines}</small>
         {/if}
       </div>
       <div class="stat-card">
         <span>Level</span>
-        <strong>{ui.level}</strong>
+        <strong>{$state.ui.level}</strong>
       </div>
       <div class="stat-card">
         <span>B2B</span>
-        <strong class:muted={!ui.backToBack} class:accent={ui.backToBack}>
-          {ui.backToBack ? `x${ui.b2bStreak}` : '—'}
+        <strong class:muted={!$state.ui.backToBack} class:accent={$state.ui.backToBack}>
+          {$state.ui.backToBack ? `x${$state.ui.b2bStreak}` : '—'}
         </strong>
       </div>
     {:else}
       <div class="stat-card">
         <span>Score</span>
-        <strong>{ui.score}</strong>
+        <strong>{$state.ui.score}</strong>
       </div>
       <div class="stat-card">
         <span>Lines</span>
-        <strong>{ui.lines}</strong>
+        <strong>{$state.ui.lines}</strong>
       </div>
       <div class="stat-card">
         <span>Time left</span>
-        <strong>{formatClock(timeRemainingMs ?? 0)}</strong>
+        <strong>{format.formatClock($derived.timeRemainingMs ?? 0)}</strong>
       </div>
       <div class="stat-card">
         <span>B2B</span>
-        <strong class:muted={!ui.backToBack} class:accent={ui.backToBack}>
-          {ui.backToBack ? `x${ui.b2bStreak}` : '—'}
+        <strong class:muted={!$state.ui.backToBack} class:accent={$state.ui.backToBack}>
+          {$state.ui.backToBack ? `x${$state.ui.b2bStreak}` : '—'}
         </strong>
       </div>
     {/if}
@@ -137,30 +99,30 @@
   <div class="button-stack">
     <button
       class="primary"
-      on:click={handlePrimaryAction}
-      disabled={ui.status === 'paused' && resumeCountdown > 0}
+      on:click={actions.handlePrimaryAction}
+      disabled={$state.ui.status === 'paused' && $state.resumeCountdown > 0}
     >
-      {primaryLabel(ui.status)}
+      {helpers.primaryLabel($state.ui.status)}
     </button>
-    <button class="ghost danger" on:click={restartGame} disabled={!canRestart(ui.status)}>
+    <button class="ghost danger" on:click={actions.restartGame} disabled={!helpers.canRestart($state.ui.status)}>
       Restart
     </button>
   </div>
   <div class="side-actions">
-    <button class="ghost small" on:click={openControlsModal}>Controls/Scoring</button>
+    <button class="ghost small" on:click={actions.openControlsModal}>Controls/Scoring</button>
     <button
       class="ghost small toggle-muted"
-      on:click={toggleAudioMuted}
-      aria-pressed={audioMuted}
+      on:click={actions.toggleAudioMuted}
+      aria-pressed={$state.audioMuted}
     >
-      {audioMuted ? 'Sound off' : 'Sound on'}
+      {$state.audioMuted ? 'Sound off' : 'Sound on'}
     </button>
   </div>
   <div class="leaderboard-panel">
     <div class="leaderboard-header">
       <span>Leaderboards</span>
-      {#if displayMode.metric}
-        <button class="ghost small" on:click={() => openLeaderboardModal('global')}>
+      {#if $derived.displayMode.metric}
+        <button class="ghost small" on:click={() => actions.openLeaderboardModal('global')}>
           View all
         </button>
       {/if}
@@ -168,79 +130,79 @@
     <div class="leaderboard-grid">
       <button
         class="leaderboard-card"
-        on:click={() => openLeaderboardModal('global')}
-        disabled={!displayMode.metric}
+        on:click={() => actions.openLeaderboardModal('global')}
+        disabled={!$derived.displayMode.metric}
       >
         <div class="leaderboard-title">
           <span>Global</span>
-          {#if displayMode.metric}
-            <small>{displayMode.metric === 'time' ? 'Best time' : 'Best score'}</small>
+          {#if $derived.displayMode.metric}
+            <small>{$derived.displayMode.metric === 'time' ? 'Best time' : 'Best score'}</small>
           {/if}
         </div>
-        {#if !displayMode.metric}
+        {#if !$derived.displayMode.metric}
           <p class="muted">Zen has no leaderboard. Runs fully offline.</p>
-        {:else if leaderboardGlobal.status === 'loading'}
+        {:else if $state.leaderboardGlobal.status === 'loading'}
           <p class="muted">Loading...</p>
-        {:else if leaderboardGlobal.status === 'error'}
+        {:else if $state.leaderboardGlobal.status === 'error'}
           <p class="muted">Error loading</p>
-        {:else if leaderboardGlobal.status === 'offline'}
+        {:else if $state.leaderboardGlobal.status === 'offline'}
           <p class="muted">Offline</p>
-        {:else if globalTopEntry}
+        {:else if $derived.globalTopEntry}
           <div class="leaderboard-entry">
-            <strong>#1 {globalTopEntry.playerName}</strong>
-            <span>{formatMetricValue(globalTopEntry.metricValue, displayMode)}</span>
+            <strong>#1 {$derived.globalTopEntry.playerName}</strong>
+            <span>{format.formatMetricValue($derived.globalTopEntry.metricValue, $derived.displayMode)}</span>
           </div>
         {:else}
           <p class="muted">No scores yet</p>
         {/if}
-        {#if displayMode.metric && ui.status !== 'menu'}
+        {#if $derived.displayMode.metric && $state.ui.status !== 'menu'}
           <div class="leaderboard-current">
             <span>Current</span>
-            <span>{formatMetricValue(currentMetricValue, displayMode)}</span>
+            <span>{format.formatMetricValue($derived.currentMetricValue, $derived.displayMode)}</span>
             <span class="rank">
-              {formatRank(globalRank, leaderboardGlobal.entries.length)}
+              {format.formatRank($derived.globalRank, $state.leaderboardGlobal.entries.length)}
             </span>
           </div>
         {/if}
       </button>
       <button
-        class={`leaderboard-card ${!hasNickname ? 'guest' : ''}`}
-        on:click={() => openLeaderboardModal('mine')}
-        disabled={!displayMode.metric || !hasNickname}
+        class={`leaderboard-card ${!$derived.hasNickname ? 'guest' : ''}`}
+        on:click={() => actions.openLeaderboardModal('mine')}
+        disabled={!$derived.displayMode.metric || !$derived.hasNickname}
       >
         <div class="leaderboard-title">
           <span>My scores</span>
-          {#if displayMode.metric}
-            <small>{displayMode.metric === 'time' ? 'Best time' : 'Best score'}</small>
+          {#if $derived.displayMode.metric}
+            <small>{$derived.displayMode.metric === 'time' ? 'Best time' : 'Best score'}</small>
           {/if}
-          {#if !hasNickname}
+          {#if !$derived.hasNickname}
             <span class="guest-pill">Guest</span>
           {/if}
         </div>
-        {#if !displayMode.metric}
+        {#if !$derived.displayMode.metric}
           <p class="muted">Zen has no leaderboard. Runs fully offline.</p>
-        {:else if !hasNickname}
+        {:else if !$derived.hasNickname}
           <p class="muted warn">Guest mode: set a nickname to appear.</p>
-        {:else if leaderboardMine.status === 'loading'}
+        {:else if $state.leaderboardMine.status === 'loading'}
           <p class="muted">Loading...</p>
-        {:else if leaderboardMine.status === 'error'}
+        {:else if $state.leaderboardMine.status === 'error'}
           <p class="muted">Error loading</p>
-        {:else if leaderboardMine.status === 'offline'}
+        {:else if $state.leaderboardMine.status === 'offline'}
           <p class="muted">Offline</p>
-        {:else if mineTopEntry}
+        {:else if $derived.mineTopEntry}
           <div class="leaderboard-entry">
-            <strong>#1 {mineTopEntry.playerName}</strong>
-            <span>{formatMetricValue(mineTopEntry.metricValue, displayMode)}</span>
+            <strong>#1 {$derived.mineTopEntry.playerName}</strong>
+            <span>{format.formatMetricValue($derived.mineTopEntry.metricValue, $derived.displayMode)}</span>
           </div>
         {:else}
           <p class="muted">No scores yet</p>
         {/if}
-        {#if displayMode.metric && ui.status !== 'menu'}
+        {#if $derived.displayMode.metric && $state.ui.status !== 'menu'}
           <div class="leaderboard-current">
             <span>Current</span>
-            <span>{formatMetricValue(currentMetricValue, displayMode)}</span>
+            <span>{format.formatMetricValue($derived.currentMetricValue, $derived.displayMode)}</span>
             <span class="rank">
-              {formatRank(mineRank, leaderboardMine.entries.length)}
+              {format.formatRank($derived.mineRank, $state.leaderboardMine.entries.length)}
             </span>
           </div>
         {/if}

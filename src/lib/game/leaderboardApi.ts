@@ -1,22 +1,12 @@
 import type { GameModeDefinition } from './modes';
-import type { GameModeId } from './types';
 import type { LeaderboardEntry, LeaderboardScope, SubmitPayload } from './leaderboard';
 import { isLeaderboardEnabled, leaderboardApiUrl } from '$lib/leaderboard/config';
-
-type ScoreRow = {
-  id: string;
-  mode: GameModeId;
-  metric_value: number;
-  score: number;
-  time_ms: number;
-  lines: number;
-  pieces: number;
-  pps: number;
-  seed: number | null;
-  player_name: string;
-  created_at: string;
-  client_version: string | null;
-};
+import type {
+  LeaderboardBatchRequest,
+  LeaderboardBatchResponse,
+  LeaderboardScoreRow,
+  SessionInfo
+} from '$lib/leaderboard/types';
 
 type ApiErrorPayload = { error?: string };
 
@@ -60,12 +50,7 @@ const requestJson = async <T>(path: string, options: RequestInit): Promise<ApiRe
   }
 };
 
-export type SessionInfo = {
-  nonce: string;
-  expiresAt: string;
-};
-
-const mapRow = (row: ScoreRow): LeaderboardEntry => ({
+const mapRow = (row: LeaderboardScoreRow): LeaderboardEntry => ({
   id: row.id,
   modeId: row.mode,
   metricValue: row.metric_value,
@@ -162,10 +147,10 @@ export const fetchLeaderboardsCombined = async (options: {
   if (signal) {
     requestInit.signal = signal;
   }
-  const { data, error } = await requestJson<
-    | { entries: ScoreRow[] }
-    | { global: ScoreRow[]; mine: ScoreRow[] }
-  >('/api/leaderboard/batch', requestInit);
+  const { data, error } = await requestJson<LeaderboardBatchResponse>(
+    '/api/leaderboard/batch',
+    requestInit
+  );
 
   if (error) {
     throw new Error(error);
@@ -220,14 +205,17 @@ export const submitScore = async (
     return { entry: null, error: 'offline' };
   }
 
-  const { data, error } = await requestJson<{ entry?: ScoreRow }>('/api/leaderboard/session/submit', {
+  const { data, error } = await requestJson<{ entry?: LeaderboardScoreRow }>(
+    '/api/leaderboard/session/submit',
+    {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       ...payload,
       playerName: payload.playerName.trim()
     })
-  });
+    }
+  );
 
   if (error) {
     return { entry: null, error };

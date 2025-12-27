@@ -258,6 +258,36 @@
   .scoring-list {
     font-size: 0.82rem;
     line-height: 1.4;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.6rem;
+    color: var(--ink-soft);
+  }
+
+  .scoring-list .score-label {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 0.25rem;
+  }
+
+  .scoring-list .score-value {
+    display: block;
+    color: var(--ink-soft);
+  }
+
+  .scoring-list .score-line {
+    display: block;
+  }
+
+  .scoring-list .score-line + .score-line {
+    margin-top: 0.2rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.55);
   }
 
   .settings-modal .preset-row {
@@ -269,20 +299,23 @@
   }
 
   .preset-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    display: flex;
     gap: 0.5rem;
+    flex-wrap: nowrap;
   }
 
   .preset-pill {
-    padding: 0.45rem 0.6rem;
+    padding: 0.35rem 0.5rem;
     border-radius: 999px;
     border: 1px solid var(--panel-border);
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink-soft);
     text-align: center;
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   .preset-pill.active {
@@ -291,13 +324,26 @@
   }
 
   .preset-pill.custom {
-    opacity: 0.7;
+    border-style: dashed;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--ink-soft);
+    cursor: default;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .preset-pill.custom.active {
+    border-color: rgba(77, 235, 255, 0.6);
+    color: var(--accent);
   }
 
   .handling-grid {
     display: grid;
     gap: 0.7rem;
     margin-top: 0.6rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .field-label {

@@ -1,0 +1,40 @@
+import type { GameConfig, GameModeId, GameState, GameStatus } from '$lib/game/types';
+import type { GameResult, LeaderboardScope } from '$lib/game/leaderboard';
+import type { LeaderboardState } from '$lib/game/ui/leaderboardState';
+import type { HandlingPresetId } from '$lib/ui/handlingPresets';
+import type { UiState } from '$lib/ui/types';
+import type { BackendAlert } from '$lib/ui/page/modals';
+import type { SessionInfo } from '$lib/leaderboard/types';
+import type { SessionStatus } from '$lib/ui/page/session';
+
+export type SubmitStatus = 'idle' | 'pending' | 'success' | 'error' | 'offline';
+
+export type GamePageState = {
+  game: GameState;
+  ui: UiState;
+  configDraft: GameConfig;
+  selectedModeId: GameModeId;
+  selectedPreset: HandlingPresetId;
+  nickname: string;
+  nicknameDraft: string;
+  audioMuted: boolean;
+  showControls: boolean;
+  showSettings: boolean;
+  leaderboardOpen: boolean;
+  leaderboardTab: LeaderboardScope;
+  showViewportGuard: boolean;
+  bypassViewportGuard: boolean;
+  resumeCountdown: number;
+  submitStatus: SubmitStatus;
+  submitError: string | null;
+  lastResult: GameResult | null;
+  lastStatus: GameStatus;
+  leaderboardGlobal: LeaderboardState;
+  leaderboardMine: LeaderboardState;
+  backendAlerts: BackendAlert[];
+  restartCooldownUntil: number;
+  sessionInfo: SessionInfo | null;
+  sessionError: string | null;
+  sessionStatus: SessionStatus;
+  lastSubmittedKey: string | null;
+};

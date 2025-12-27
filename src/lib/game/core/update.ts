@@ -28,6 +28,7 @@ const resetFallTimers = (state: GameState) => {
 const clearRotationState = (state: GameState) => {
   state.lastMoveWasRotation = false;
   state.lastRotationKick = null;
+  state.lastRotationPosition = null;
 };
 
 const applyHold = (state: GameState): boolean => {
@@ -65,6 +66,7 @@ const applyRotation = (
   events.rotated = true;
   state.lastMoveWasRotation = true;
   state.lastRotationKick = kick;
+  state.lastRotationPosition = { x: state.active.x, y: state.active.y };
   const spinPreview = detectSpin(state);
   if (spinPreview.kind !== 'none') {
     spawnSpinParticles(state, spinDir);

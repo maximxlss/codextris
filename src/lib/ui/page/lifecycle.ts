@@ -4,7 +4,7 @@ import { isEditableTarget } from '$lib/game/ui/modals';
 import type { AudioManager } from '$lib/game/audio';
 import type { GameModeDefinition } from '$lib/game/modes';
 import type { GameConfig, GameModeId, GameStatus } from '$lib/game/types';
-import type { SessionInfo } from '$lib/game/leaderboardApi';
+import type { SessionInfo } from '$lib/leaderboard/types';
 import type { HandlingPresetId } from '$lib/ui/handlingPresets';
 
 type LayoutManager = {
