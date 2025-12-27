@@ -9,6 +9,10 @@
 - Introduce score/statistics display in Zen mode.
 - Clean up the readme.
 - Clean up the agent helpers.
+- Add authorization
+    - Create a flow where the user doesn't have to register but they are kind of registered automatically.
+    - Consider Credential Management API.
+    - Untie user from username, make it unique but changeable.
 
 
 # Future?
