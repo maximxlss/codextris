@@ -10,8 +10,8 @@ export const hardDrop = (state: GameState): number => {
   let distance = 0;
   while (tryMove(state, 0, 1)) {
     distance += 1;
+    clearRotationState(state);
   }
-  clearRotationState(state);
   return distance;
 };
 
