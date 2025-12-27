@@ -19,6 +19,8 @@ jobs:
           cache: 'npm'
       - name: Install
         run: npm ci
+      - name: Sync SvelteKit
+        run: npx svelte-kit sync
       - name: Set PUBLIC_APP_VERSION
         run: |
           TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
