@@ -11,6 +11,7 @@ export const hardDrop = (state: GameState): number => {
   while (tryMove(state, 0, 1)) {
     distance += 1;
   }
+  clearRotationState(state);
   return distance;
 };
 
@@ -232,7 +233,6 @@ export const updateGame = (state: GameState, input: InputSnapshot, dt: number): 
     events.lockResult = lockResult;
     resetFallTimers(state);
     checkGoalComplete(state);
-    clearRotationState(state);
     return events;
   }
 
