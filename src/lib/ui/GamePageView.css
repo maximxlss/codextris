@@ -47,6 +47,7 @@ body {
   justify-content: center;
   position: relative;
   isolation: isolate;
+  right: -1rem;
   z-index: 1;
 }
 
