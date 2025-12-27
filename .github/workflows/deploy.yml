@@ -9,6 +9,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    environment: "Workers deploy to xls.msk.ru"
+    concurrency:
+      group: deploy-worker
+      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
