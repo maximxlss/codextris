@@ -1,6 +1,8 @@
 # Vibecoded tetris
 Not a single line of code was written by me. Everything was written by gpt-5.2-codex under my guidance.
 
+You can play here: [codextris.xls.msk.ru](https://codextris.xls.msk.ru/)
+
 ![screeenshot](images/screenshot.png)
 
 # Codextris — Neon Tetris
