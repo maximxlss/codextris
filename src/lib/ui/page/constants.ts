@@ -11,4 +11,4 @@ export const MIN_VIEWPORT_WIDTH = 960;
 export const MIN_VIEWPORT_HEIGHT = 640;
 export const MIN_VIEWPORT_ASPECT = 1.1;
 export const MIN_CELL_SIZE = 18;
-export const CLIENT_VERSION = import.meta.env.PUBLIC_APP_VERSION ?? 'dev';
+export const CLIENT_VERSION = import.meta.env.VITE_PUBLIC_APP_VERSION ?? 'dev';
